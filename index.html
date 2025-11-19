@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestão de Classes de Extintores (Persistente)</title>
     <style>
+        /* Estilos fornecidos na sua requisição */
         body {
             font-family: Arial, sans-serif;
             margin: 20px;
@@ -78,9 +79,13 @@
 
 <div class="container">
     <h1>🔥 Gestão de Classes de Extintores</h1>
+    
+
+[Image of Fire Extinguisher Classes A, B, C]
+
 
     <div class="form-group insert-form">
-        <input type="text" id="novaClasseInput" placeholder="Nova Classe (Ex: ABC ou BC)">
+        <input type="text" id="novaClasseInput" placeholder="Nova Classe (Ex: ABC, BC, ou A)">
         <button onclick="adicionarExtintor()">Inserir</button>
     </div>
 
@@ -93,7 +98,7 @@
 
     <h2>🔍 Pesquisa de Classes</h2>
     <div class="form-group">
-        <input type="text" id="pesquisaInput" onkeyup="carregarTabela(this.value)" placeholder="Digite ABC, BC ou A para pesquisar e exibir a tabela...">
+        <input type="text" id="pesquisaInput" onkeyup="carregarTabela(this.value)" placeholder="Digite A, BC ou ABC para pesquisar e exibir a tabela...">
     </div>
 
     <div id="tabelaContainer" class="tabela-container hidden">
@@ -117,15 +122,24 @@
 
     // --- FUNÇÕES DE PERSISTÊNCIA (localStorage) ---
 
+    /**
+     * Obtém o array de extintores do localStorage.
+     * @returns {Array<{id: number, classe: string}>} Array de extintores.
+     */
     function getExtintores() {
         const dados = localStorage.getItem(CHAVE_EXTINTORES);
-        // Retorna os dados convertidos de volta para array/objeto, ou um array inicial se não houver nada
+        // Retorna os dados convertidos, ou um array inicial se for o primeiro acesso
         return dados ? JSON.parse(dados) : [
-            { id: 1, classe: 'ABC' },
-            { id: 2, classe: 'BC' }
+            { id: 1, classe: 'A' },
+            { id: 2, classe: 'BC' },
+            { id: 3, classe: 'ABC' }
         ];
     }
 
+    /**
+     * Salva o array de extintores no localStorage.
+     * @param {Array<{id: number, classe: string}>} arrExtintores 
+     */
     function setExtintores(arrExtintores) {
         // Converte o array/objeto para string e salva no localStorage
         localStorage.setItem(CHAVE_EXTINTORES, JSON.stringify(arrExtintores));
@@ -133,7 +147,7 @@
 
     // --- FUNÇÕES CRUD ---
 
-    // 4. CONSULTAR (Read) & FILTRAR
+    // 4. CONSULTAR (Read) & FILTRAR/EXIBIR
     function carregarTabela(termoPesquisa = '') {
         const tabelaCorpo = document.getElementById('tabelaCorpo');
         const tabelaContainer = document.getElementById('tabelaContainer');
@@ -143,17 +157,18 @@
         const termo = termoPesquisa.trim().toUpperCase();
         localStorage.setItem(CHAVE_PESQUISA, termo);
         
-        // 2. Oculta ou exibe a tabela
+        // 2. Oculta a tabela se o termo de pesquisa estiver vazio
         if (termo.length < 1) {
             tabelaContainer.classList.add('hidden');
             return; 
         } else {
+             // Exibe a tabela se houver um termo de pesquisa
             tabelaContainer.classList.remove('hidden');
         }
 
         const extintores = getExtintores();
         
-        // 3. Filtra os dados
+        // 3. Filtra os dados: a classe do extintor deve CONTER o termo pesquisado.
         const extintoresFiltrados = extintores.filter(extintor => 
             extintor.classe.includes(termo)
         );
@@ -168,130 +183,3 @@
              cell.style.color = '#dc3545';
              return;
         }
-
-
-        extintoresFiltrados.forEach(extintor => {
-            const row = tabelaCorpo.insertRow();
-            row.insertCell().textContent = extintor.id;
-            row.insertCell().textContent = extintor.classe;
-
-            const acoesCell = row.insertCell();
-            acoesCell.classList.add('actions');
-            
-            // Botão Alterar
-            const btnAlterar = document.createElement('button');
-            btnAlterar.textContent = 'Alterar';
-            btnAlterar.className = 'update-btn';
-            btnAlterar.onclick = () => prepararAlteracao(extintor.id, extintor.classe);
-            acoesCell.appendChild(btnAlterar);
-
-            // Botão Excluir
-            const btnExcluir = document.createElement('button');
-            btnExcluir.textContent = 'Excluir';
-            btnExcluir.className = 'delete-btn';
-            btnExcluir.onclick = () => excluirExtintor(extintor.id);
-            acoesCell.appendChild(btnExcluir);
-        });
-    }
-
-    // 1. INSERIR (Create)
-    function adicionarExtintor() {
-        const input = document.getElementById('novaClasseInput');
-        const novaClasse = input.value.trim().toUpperCase();
-
-        if (novaClasse) {
-            const extintores = getExtintores();
-            // Encontra o próximo ID disponível
-            const nextId = extintores.length > 0 ? Math.max(...extintores.map(e => e.id)) + 1 : 1;
-
-            extintores.push({
-                id: nextId,
-                classe: novaClasse
-            });
-
-            setExtintores(extintores); // Salva no localStorage
-            input.value = ''; 
-            
-            const termoPesquisa = localStorage.getItem(CHAVE_PESQUISA) || '';
-            carregarTabela(termoPesquisa); // Recarrega a tabela com o filtro atual
-            alert(`Classe ${novaClasse} inserida com sucesso!`);
-        } else {
-            alert('Por favor, insira uma classe válida.');
-        }
-    }
-
-    // 2. ALTERAR (Update) - Preparar
-    function prepararAlteracao(id, classeAtual) {
-        document.getElementById('idAlterar').value = id;
-        document.getElementById('classeAlterarInput').value = classeAtual;
-        document.getElementById('formAlterar').classList.remove('hidden');
-        
-        // Regra: se a classe for 'ABC', sugere a alteração para 'A'
-        if (classeAtual === 'ABC') {
-            document.getElementById('classeAlterarInput').value = 'A';
-        }
-    }
-
-    // 2. ALTERAR (Update) - Salvar
-    function salvarAlteracao() {
-        const id = parseInt(document.getElementById('idAlterar').value);
-        const novaClasse = document.getElementById('classeAlterarInput').value.trim().toUpperCase();
-        
-        if (novaClasse) {
-            const extintores = getExtintores();
-            const index = extintores.findIndex(e => e.id === id);
-
-            if (index !== -1) {
-                const classeAntiga = extintores[index].classe;
-                extintores[index].classe = novaClasse;
-                
-                setExtintores(extintores); // Salva no localStorage
-                
-                document.getElementById('formAlterar').classList.add('hidden');
-                
-                const termoPesquisa = localStorage.getItem(CHAVE_PESQUISA) || '';
-                carregarTabela(termoPesquisa); 
-                alert(`Classe do ID ${id} alterada de ${classeAntiga} para ${novaClasse} com sucesso!`);
-            }
-        } else {
-            alert('Por favor, insira uma classe válida para a alteração.');
-        }
-    }
-
-    function cancelarAlteracao() {
-        document.getElementById('formAlterar').classList.add('hidden');
-    }
-
-    // 3. EXCLUSÃO (Delete)
-    function excluirExtintor(id) {
-        if (confirm(`Tem certeza que deseja excluir o extintor com ID ${id}?`)) {
-            let extintores = getExtintores();
-            const extintorExcluido = extintores.find(e => e.id === id);
-            
-            extintores = extintores.filter(extintor => extintor.id !== id);
-            
-            setExtintores(extintores); // Salva no localStorage
-            
-            const termoPesquisa = localStorage.getItem(CHAVE_PESQUISA) || '';
-            carregarTabela(termoPesquisa); 
-            alert(`Extintor de classe ${extintorExcluido.classe} (ID ${id}) excluído com sucesso!`);
-        }
-    }
-
-    // --- INICIALIZAÇÃO DA PÁGINA ---
-    window.onload = function() {
-        const ultimaPesquisa = localStorage.getItem(CHAVE_PESQUISA);
-
-        // Se houver uma pesquisa anterior, preenche o campo e carrega a tabela com o filtro.
-        if (ultimaPesquisa) {
-            document.getElementById('pesquisaInput').value = ultimaPesquisa;
-            carregarTabela(ultimaPesquisa);
-        } else {
-             // Garante que a tabela está oculta se não houver filtro
-             document.getElementById('tabelaContainer').classList.add('hidden');
-        }
-    };
-</script>
-
-</body>
-</html>
